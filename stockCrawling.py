@@ -26,9 +26,33 @@ class StockCrawling:
         stock_code = self.getCompanyInfor()
         ids = json.loads(stock_code['_id'].T.to_json()).values()
         records = json.loads(stock_code.T.to_json()).values()
-        insertReturn = self.mongoclient.companyinfor.insert(records)
-        return insertReturn
+        #print(stock_code.T.to_json())
+        #print(records)
+
+        from collections import defaultdict
+        returnDic = defaultdict(list)
+        for x in records:
+            tempValue=self.mongoclient.companyinfor.update({"_id":x["_id"]},x,upsert=True)
+            for k, v in tempValue.items():
+                returnDic[k].append(v)
+        returnValue = {}
+        from functools import reduce
+        import numbers
+
+        for x in returnDic.keys():
+            if(isinstance(returnDic[x][0], numbers.Number)):
+                returnValue[x]= reduce(lambda x,y: x + y,returnDic[x],0)
+            elif type(x) == type(True) :
+                returnValue[x] = len(returnDic[x])
+            else:
+                returnValue[x] = returnDic[x]
+
+        return (returnValue)
 
     def getCompanySize(self):
         return self.mongoclient.companyinfor.count()
+
+    def getStockByCode(self):
+        return None
+        # to do
 
